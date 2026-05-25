@@ -1,7 +1,7 @@
-# Session Protocols — Working Agreement
+# Session Protocols — Working Together
 
 A shared playbook between a user and an agentic coding assistant using the three-tool system:
-**EOSP** (end-of-session memory write) + **SOSP** (start-of-session verification) + **CodeGraph** (persistent code index).
+**EOSP** (end-of-session memory write) + **SOSP** (start-of-session verification) + **Codegraph** (persistent code index).
 
 Scoped to **modifications on existing codebases**, not greenfield projects.
 
@@ -11,11 +11,13 @@ Scoped to **modifications on existing codebases**, not greenfield projects.
 
 | Tool | Trigger | What it does | Direction |
 |---|---|---|---|
-| **EOSP** (skill) | User types exactly `EOSP` | Writes a dense state snapshot into project memory files | Writes |
-| **SOSP** (`verify-latest-source` skill + project memory rule) | Auto-fires on most coding requests in existing codebases | Verifies git topology, deployment URL, active imports, untracked files, deployed bundle | Reads + verifies |
-| **CodeGraph** (`codegraph-auto-init` skill) | Auto-init via UserPromptSubmit hook in qualifying repos | Builds persistent SQL index of symbols, imports, call graph | Indexes |
+| **EOSP** (skill) | You type exactly `EOSP` | Writes a dense state snapshot into project memory files | Writes |
+| **SOSP** (skill) | Auto-fires on most coding requests in existing codebases | Verifies git topology, deployment URL, active imports, untracked files, deployed bundle | Reads + verifies |
+| **Codegraph** (`codegraph-auto-init` skill) | Auto-init via UserPromptSubmit hook in qualifying repos | Builds persistent SQL index of symbols, imports, call graph | Indexes |
 
-Together: EOSP writes the story → CodeGraph indexes the structure → SOSP cross-checks both against reality before the assistant acts.
+Together: EOSP writes the story → Codegraph indexes the structure → SOSP cross-checks both against reality before the assistant acts.
+
+**Both SOSP and EOSP are now 1:1 with their skills.** Generic enforcement lives in the skill descriptions themselves (global, applies to every project). Project memory is reserved for **project-specific landmines** only.
 
 ---
 
@@ -27,7 +29,7 @@ Together: EOSP writes the story → CodeGraph indexes the structure → SOSP cro
 - Just state your goal: *"Fix the camera permission on Android"* / *"Change the loader color to blue"* / *"Deploy the latest"*
 - Or explicitly: *"Run SOSP first"* / *"Verify source of truth before starting"*
 
-The skill description should auto-fire on words like *fix, change, add, deploy, revert, what's wrong*. The explicit form guarantees it.
+The `sosp` skill description should auto-fire on words like *fix, change, add, deploy, revert, look at, debug, diagnose, review, check, what's wrong*. The explicit form guarantees it.
 
 **You provide upfront (saves several turns):**
 - The deployment URL you're testing on right now
@@ -35,12 +37,12 @@ The skill description should auto-fire on words like *fix, change, add, deploy, 
 - Branch preference if you have one
 
 **The assistant does:**
-1. Reads project memory (`MEMORY.md` + the files it links)
-2. Reads `working.md` if it exists at the project root
-3. Runs `verify-latest-source` checklist: git topology → deployment URL bundle hashes → entry-point imports → untracked critical files
-4. Queries CodeGraph (if initialized) for active import graph instead of grepping
-5. Reports a one-screen situation summary and a plan
-6. Waits for confirmation OR proceeds if the plan is clearly tactical
+1. Read project memory (`MEMORY.md` + the files it links — including any `project_landmines.md` for this project)
+2. Read `working.md` if it exists at the project root
+3. Run `sosp` skill checklist: git topology → deployment URL bundle hashes → entry-point imports → untracked critical files
+4. Query codegraph (if initialized) for active import graph instead of grepping
+5. Report a one-screen situation summary and a plan
+6. Wait for your confirmation OR proceed if the plan is clearly tactical
 
 ---
 
@@ -50,11 +52,11 @@ Don't wait until things get worse. These short phrases re-anchor the assistant:
 
 | You say | The assistant does |
 |---|---|
-| *"Verify what's deployed"* | Re-curls the URL, greps bundle markers, compares to local build |
-| *"Re-check entry-point imports"* | Re-greps imports, states active architecture |
-| *"What URL is your deploy landing on?"* | States explicitly: production vs preview alias vs unique hash URL |
-| *"Stop. Re-verify."* | Halts, re-runs full SOSP checklist before continuing |
-| *"You're drifting. Show me what you actually know."* | Lists current assumptions with evidence; flags anything being guessed |
+| *"Verify what's deployed"* | Re-curl the URL, grep bundle markers, compare to local build |
+| *"Re-check entry-point imports"* | Re-grep imports, state active architecture |
+| *"What URL is your deploy landing on?"* | State explicitly: production vs preview alias vs unique hash URL |
+| *"Stop. Re-verify."* | Halt, re-run full SOSP checklist before continuing |
+| *"You're drifting. Show me what you actually know."* | List my current assumptions with evidence; flag anything I'm guessing at |
 
 Cost of calling these is low. Cost of letting drift accumulate is high.
 
@@ -64,14 +66,14 @@ Cost of calling these is low. Cost of letting drift accumulate is high.
 
 **You say:** `EOSP` (exact phrase, anywhere in a message)
 
-**The assistant does:** invokes the EOSP skill, which writes a structured snapshot into project memory:
+**The assistant does:** invoke the `eosp` skill, which writes a structured snapshot into project memory:
 - Current branch + uncommitted state
 - What was changed this session and why
 - What was deployed (URL + bundle hash)
 - What's pending / what to try next
 - Gotchas to remember
 
-Then stops and reports the file paths written.
+Then I stop and report the file paths I wrote.
 
 ---
 
@@ -79,9 +81,9 @@ Then stops and reports the file paths written.
 
 **You say:** [open a new conversation in a different working directory]
 
-**Automatic:** project-scoped memory path changes based on cwd. CodeGraph re-checks for `.codegraph/` in the new repo.
+**Automatic:** project-scoped memory path changes based on cwd. Codegraph re-checks for `.codegraph/` in the new repo. The `sosp` skill applies globally — works on any project without setup.
 
-**You should still:** name the project in your first message so the right memory is read.
+**You should still:** name the project in your first message so I read the right memory.
 
 ---
 
@@ -89,7 +91,7 @@ Then stops and reports the file paths written.
 
 **You say:** *"Starting a new project"* or describe greenfield work explicitly.
 
-**The assistant does:** skips SOSP entirely (nothing to verify). CodeGraph won't init until source file count crosses the threshold. EOSP is still useful for tracking decisions made.
+**The assistant does:** skip SOSP entirely (nothing to verify — the skill description says "Skip only for greenfield projects with no prior state"). Codegraph won't init until source file count crosses ~30. EOSP is still useful for tracking decisions made.
 
 ---
 
@@ -100,7 +102,7 @@ Then stops and reports the file paths written.
 | Start work on existing codebase | "fix / change / add / deploy / revert ..." | SOSP auto-fire |
 | Force full verification | "Run SOSP" / "Verify before continuing" | SOSP explicit |
 | Re-check deployment | "What's at \<URL\>?" | Curl + bundle marker grep |
-| Re-check architecture | "What does the entry-point actually import?" | grep entry-point or CodeGraph |
+| Re-check architecture | "What does the entry-point actually import?" | grep entry-point or codegraph |
 | Re-check git source | "What's the git topology?" | git worktree + branch + log |
 | Stop drift | "Stop. Re-verify." | Halt + re-run SOSP |
 | Close session | "EOSP" | EOSP writes snapshot |
@@ -108,15 +110,21 @@ Then stops and reports the file paths written.
 
 ---
 
-## What you do NOT need to say (enforced via feedback memory)
+## What you do NOT need to say (already enforced)
 
-These should fire automatically once the relevant memory files are installed (see `memory-templates/`):
+**Global (enforced by skill descriptions):**
+- Invoke SOSP at session start — the `sosp` skill self-triggers on any coding request in an existing codebase
+- Invoke EOSP on session close — the `eosp` skill triggers on the exact phrase `EOSP`
 
-- **Always deploy after every change** — assistant builds + deploys without being asked
-- **No temporal claims about code** — assistant describes snapshots by content, not by "today" / "recent" / "last working"
-- **Project-specific conventions** (file formats, naming) — add as project memory
+**Project-scoped (enforced via project memory):**
+- Project-specific deploy commands (e.g. build + deploy after every change)
+- Project-specific conventions (file formats, naming, gotchas)
+- Project-specific landmines (parallel architectures, locked URLs, untracked critical files)
 
-If the assistant violates any of these, call it out — it means a memory rule isn't firing.
+**Universal feedback rules (in project memory, but generic enough to drop into any project):**
+- **No temporal claims about code** — describe snapshots by content, not by "today" / "recent" / "last working"
+
+If the assistant violates any of these, call it out — it means a rule isn't firing.
 
 ---
 
@@ -136,29 +144,37 @@ If you see the assistant about to do any of these, interrupt with **"Verify firs
 
 | Failure | How to catch it |
 |---|---|
-| **CodeGraph stale** (~1 sec watcher lag after edits) | If the assistant just edited then queries, results may lag. Always trust reality (git, curl) when CodeGraph and reality disagree. |
+| **Codegraph stale** (~1 sec watcher lag after edits) | If the assistant just edited then queries, results may lag. Always trust reality (git, curl) when codegraph and reality disagree. |
 | **Memory drift** (EOSP wrote wrong state) | Override directly: *"Memory is wrong about X. Here's the truth: ..."* — the assistant should update the relevant file. |
 | **Skill trigger missed** (SOSP didn't auto-fire on subtle phrasing) | Use explicit *"Run SOSP"* instead of relying on heuristic match. |
-| **Three layers compound** (CodeGraph stale + memory wrong + assistant trusts majority) | Force re-verify against reality: *"Curl the URL. Read the entry-point fresh. Show me."* |
+| **Three layers compound** (codegraph stale + memory wrong + assistant trusts majority) | Force re-verify against reality: *"Curl the URL. Read the entry-point fresh. Show me."* |
 | **Mid-session drift** (the bookend protocols don't protect this) | Use scenario B interventions early and often. |
 
 ---
 
-## Files the system depends on
+## Files this system depends on
+
+**Global (apply to every codebase on this machine):**
 
 | Path | Purpose |
 |---|---|
-| `~/.claude/skills/verify-latest-source/SKILL.md` | SOSP skill definition + checklist |
-| `~/.claude/skills/codegraph-auto-init/SKILL.md` | CodeGraph init hook |
+| `~/.claude/skills/sosp/SKILL.md` | SOSP skill — pre-flight checklist + auto-trigger description |
+| `~/.claude/skills/codegraph-auto-init/SKILL.md` | Codegraph init hook |
+| `~/.claude/SESSION_PROTOCOLS.md` | This playbook (always readable by either of us) |
+
+**Project-scoped (per-project, only loads when working in that directory):**
+
+| Path | Purpose |
+|---|---|
 | `~/.claude/projects/<project-slug>/memory/MEMORY.md` | Project memory index |
-| `~/.claude/projects/<project-slug>/memory/feedback_*.md` | Behavioral rules the assistant follows without being asked |
-| `<PROJECT_ROOT>/working.md` | Cross-session state file for the project |
-| `~/.claude/SESSION_PROTOCOLS.md` | This playbook |
+| `~/.claude/projects/<project-slug>/memory/project_landmines.md` | Project-specific gotchas SOSP must check |
+| `~/.claude/projects/<project-slug>/memory/feedback_*.md` | Project-specific behavioral rules |
+| `<PROJECT_ROOT>/working.md` | Cross-session state file written by EOSP |
 
 ---
 
 ## How to keep this doc honest
 
-If a scenario doesn't match reality, edit this file. Don't let it drift into ritual. The doc is only useful while it reflects how you actually work.
+If a scenario doesn't match reality, edit this file. Don't let it drift into ritual. The doc is only useful while it reflects how we actually work.
 
 When a new failure mode emerges that any of these phrases would have prevented, add it to the relevant table. When a phrase stops triggering reliably, replace it with one that does.

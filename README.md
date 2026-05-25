@@ -7,9 +7,9 @@ A three-tool system for reliable multi-session work on existing codebases with [
 | Path | Purpose |
 |---|---|
 | `SESSION_PROTOCOLS.md` | The shared playbook — what to say in each scenario, what the assistant does in response |
-| `skills/verify-latest-source/SKILL.md` | Start-of-Session Protocol (SOSP) skill — pre-flight verification of source-of-truth before any edit |
+| `skills/sosp/SKILL.md` | Start-of-Session Protocol skill — pre-flight verification of source-of-truth before any edit. Globally auto-fires on coding requests in existing codebases. |
 | `skills/codegraph-auto-init/SKILL.md` | Auto-initializes [CodeGraph](https://github.com/davidsuper/codegraph) when working in qualifying repos |
-| `memory-templates/` | Templated feedback rules to drop into project-scoped memory |
+| `memory-templates/` | Templates for **project-specific** memory files (project landmines, deploy commands, conventions) to drop into per-project memory directories |
 
 ## The three tools
 
@@ -23,12 +23,14 @@ Together: EOSP writes the story → CodeGraph indexes the structure → SOSP cro
 
 **Scope:** modifications on existing codebases. Greenfield projects don't benefit (nothing to verify).
 
+**Both SOSP and EOSP are 1:1 with their skills** — the skills carry the enforcement logic. Project memory is reserved for **project-specific landmines** only.
+
 ## Installation
 
 1. **Copy skills into your Claude skills directory:**
 
    ```bash
-   cp -r skills/verify-latest-source ~/.claude/skills/
+   cp -r skills/sosp ~/.claude/skills/
    cp -r skills/codegraph-auto-init ~/.claude/skills/
    ```
 
@@ -38,12 +40,13 @@ Together: EOSP writes the story → CodeGraph indexes the structure → SOSP cro
    cp SESSION_PROTOCOLS.md ~/.claude/
    ```
 
-3. **For each project that benefits, add the project-scoped memory file** that enforces SOSP invocation. The path depends on your Claude memory layout — typically something like `~/.claude/projects/<project-slug>/memory/`. Adapt `memory-templates/feedback_invoke_verify_at_start.template.md` and drop it in.
+3. **For each project with specific landmines, add a `project_landmines.md` file** to that project's memory directory. Adapt `memory-templates/project_landmines.template.md` — fill in the parallel architectures, deployment URL gotchas, untracked critical files, and any project-specific deploy commands. The path depends on your Claude memory layout — typically something like `~/.claude/projects/<project-slug>/memory/`.
 
-4. **Add the other feedback memories** as relevant to your project:
+4. **Add other feedback memories as relevant to each project:**
    - `feedback_always_deploy.template.md` — for projects with a build+deploy step
    - `feedback_no_temporal_claims.template.md` — universal; safe to add to any project
-   - `feedback_invoke_verify_at_start.template.md` — for projects where SOSP must fire reliably
+
+   These are *project-scoped* enforcement of behavioral rules. The SOSP skill itself is global and self-enforcing — no per-project memory required to make it fire.
 
 5. **EOSP skill** is currently distributed as part of Anthropic's skills library. If your environment has it, the trigger phrase is `EOSP`. If not, you can write your own EOSP-equivalent skill that writes structured state into your memory layout.
 

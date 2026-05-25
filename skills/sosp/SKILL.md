@@ -1,24 +1,31 @@
 ---
-name: verify-latest-source
+name: sosp
 description: >
-  Mandatory pre-flight verification of the project's sources of truth — git
-  branches and worktrees, deployment topology, active architecture wiring,
-  untracked critical files, and deployed bundle contents — before reading,
-  editing, or deploying code in an existing codebase. Always invoke at the
-  start of any coding task in an existing project; especially required when
-  working inside a git worktree, on a Claude-managed branch, when the user
+  Start of Session Protocol (SOSP). Mandatory pre-flight verification of the
+  project's sources of truth — git branches and worktrees, deployment
+  topology, active architecture wiring, untracked critical files, and
+  deployed bundle contents — before reading, editing, or deploying code in
+  any existing codebase. Always invoke at the very start of any coding task
+  in an existing project; no exceptions, no shortcuts. Especially required
+  when inside a git worktree, on a Claude-managed branch, when the user
   references a URL or deployment, when multiple architectures or branches
-  co-exist in the repo, or when the user says "fix Y", "change Z", "add X",
-  "deploy", "revert", or "what's wrong with the app." Prevents silent
-  regressions caused by editing stale code, deploying to the wrong
-  environment, reverting to internally-inconsistent snapshots, or treating
-  branch names and filenames as proof of architecture.
+  co-exist in the repo, when the user mentions "today" / "recent" /
+  "yesterday" about code state, or when the user says "fix", "change",
+  "add", "deploy", "revert", "look at", "debug", "diagnose", "review",
+  "check", or "what's wrong with the app." Pairs with EOSP — SOSP reads
+  what EOSP wrote and verifies it against current reality.
+  Skip only for greenfield projects with no prior state.
 ---
 
-# Verify Source of Truth — Pre-Flight Checklist
+# SOSP — Start of Session Protocol
 
+The pre-flight checklist for any coding task in an existing codebase.
 Editing or deploying based on assumptions is worse than doing nothing.
-Before touching any file, walk this checklist.
+Run this **before touching any file.**
+
+Pairs with **EOSP** (End of Session Protocol). SOSP reads what EOSP wrote
+into memory and verifies it against current reality (git, deployment,
+imports, runtime) before letting any work proceed.
 
 ## Why this exists
 
@@ -30,6 +37,7 @@ These failure modes are silent, common, and expensive to undo:
 - Treating a branch name as the architecture (a `foo-vision` branch may contain `bar` code)
 - Losing functionality by `git checkout`ing past untracked load-bearing files
 - Blaming browser cache without verifying which bundle the URL actually serves
+- Making temporal claims about code ("yesterday's state", "what was working") without a real timeline anchor
 
 ## Checklist
 
@@ -132,7 +140,7 @@ is the target, stop and ask:
 > treat as the source of truth?"
 
 Never default to the current working directory. Never default to "the most
-recent commit." Never default to your guess about what the user remembers
+recent commit." Never default to a guess about what the user remembers
 working.
 
 ## Decision tree
@@ -170,11 +178,12 @@ Proceed with the edit, then deploy and verify.
 
 ## Non-negotiable rules
 
-1. Never assume the current working directory is the source of truth.
-2. Always read the target file immediately before editing it.
-3. If file content surprises you (missing features, different structure
+1. Always run this checklist before any file read or edit in an existing codebase.
+2. Never assume the current working directory is the source of truth.
+3. Always read the target file immediately before editing it.
+4. If file content surprises you (missing features, different structure
    than expected) — stop. You are probably reading the wrong version.
-4. Before deploying, confirm the build is running from the same directory
+5. Before deploying, confirm the build is running from the same directory
    whose source files you edited.
-5. Before claiming a deployment is or isn't serving your changes, curl the
+6. Before claiming a deployment is or isn't serving your changes, curl the
    bundle hash and verify by content.
